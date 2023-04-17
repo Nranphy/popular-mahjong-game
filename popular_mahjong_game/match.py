@@ -624,7 +624,7 @@ class Table:
         else:
             logger.debug(f"牌局结束，荒牌流局。")
         for i in range(MATCH_PLAYER_COUNT):
-            self.player[i].update_score(self.player_in_match[i].score)
+            await self.player[i].update_score(self.player_in_match[i].score)
         logger.info(f"牌桌【{self.table_code}】牌局结束，桌内玩家分数已更新。")
         # 牌桌解散
         await self.dismiss("牌局结束，牌桌解散。")
