@@ -923,6 +923,7 @@ class Table:
             return
         try:
             await ws.send_json(msg)
+            logger.debug(f"牌桌【{self.table_code}】向玩家序号【{player_index}】发送消息：{msg}")
         except Exception as e:
             logger.error(f"牌桌【{self.table_code}】向玩家序号【{player_index}】发送消息时出错，已忽略。错误类型为{e}。")
 
