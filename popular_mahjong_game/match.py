@@ -637,7 +637,7 @@ class Table:
             "type": "dismiss",
             "data": reason
             })
-        tasks = [asyncio.create_task(table_manager.exit_table(self.table_code, player.user_id)) for player in self.player]
+        tasks = [asyncio.create_task(table_manager.exit_table(self.table_code, player.user_id, True)) for player in self.player]
         await asyncio.gather(*tasks)
         logger.debug(f"牌桌【{self.table_code}】被解散，原因是【{reason}】。")
         table_manager._remove_table(self)
@@ -956,11 +956,11 @@ class TableManager:
         await table.join(user_id)
         return table.to_dict()
 
-    async def exit_table(self, table_code:str, user_id:str) -> dict:
+    async def exit_table(self, table_code:str, user_id:str, from_dismiss:bool=False) -> dict:
         '''退出牌桌'''
         table = self.get_table(table_code)
         await table.exit(user_id)
-        if len(table.player) <= 0:
+        if not from_dismiss and len(table.player) <= 0:
             await table.dismiss("房间内已无玩家。")
     
     def _remove_table(self, table:Table):
