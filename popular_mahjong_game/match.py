@@ -320,7 +320,7 @@ class Match:
     def discard(self, player_index:int, tile_type:str='', discard_draw:bool=False) -> str:
         '''玩家切牌'''
         player = self.player[player_index]
-        if not (tile_type or discard_draw):
+        if not tile_type:
             raise DiscardException(f"切牌信息不足，切牌失败。")
         elif discard_draw and player.draw==tile_type:
             player.discard.append((player.draw, False))
