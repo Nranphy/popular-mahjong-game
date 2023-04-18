@@ -394,7 +394,7 @@ class Match:
                 player.open.append(("con_kan", *[tile_type for _ in range(4)]))
             else:
                 raise KanException("暗杠条件不成立，请检查杠牌模式是否选择错误。")
-        elif kan_type=='exposed' and target_player_index:
+        elif kan_type=='exposed' and target_player_index!=None:
             if self.player[target_player_index].discard[-1][0] != tile_type:
                 raise KanException(f"明杠条件不成立，所杠牌不同于指定的牌。将杠的牌为{self.player[target_player_index].discard[-1][0]}，而指定的牌为{tile_type}。")
             if player.close.count(tile_type) != 3:
