@@ -305,6 +305,12 @@ class Match:
         if not self.deck:
             self.result = {
                 "end_type":"draw_end",
+                "winner": "",
+                "loser": [],
+                "attribute": [],
+                "score": 0,
+                "winner_index": None,
+                "loser_index": None
             }
             raise MatchEndedException("牌堆为空，牌局结束。")
         if wall_end:
