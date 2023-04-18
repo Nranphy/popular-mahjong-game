@@ -623,7 +623,7 @@ class Table:
             logger.debug(f"序号【{winner_index}】的玩家【{self.player_in_match[winner_index].user_id}】分数 +{score}.")
             self.player_in_match[loser_index].score -= score
             logger.debug(f"序号【{loser_index}】的玩家【{self.player_in_match[loser_index].user_id}】分数 -{score}.")
-            logger.debug(f"牌局结束，序号【{winner_index}】的玩家【{self.player_in_match[i].user_id}】{'自摸' if res.get('end_type') == 'zimo' else '荣和'}获胜【{score}*3】点数。")
+            logger.debug(f"牌局结束，序号【{winner_index}】的玩家【{self.player_in_match[winner_index].user_id}】{'自摸' if res.get('end_type') == 'zimo' else '荣和'}获胜【{score}*3】点数。")
         else:
             logger.debug(f"牌局结束，荒牌流局。")
         for i in range(MATCH_PLAYER_COUNT):
@@ -816,7 +816,10 @@ class Table:
             if i==index:
                 continue
             self.player_request[i] = {}
-        logger.debug(f"牌桌【{self.table_code}】比较得最高优先级的请求为序号【{index}】请求：{self.player_request[index]}")
+        if index!= None:
+            logger.debug(f"牌桌【{self.table_code}】比较得最高优先级的请求为序号【{index}】请求：{self.player_request[index]}")
+        else:
+            logger.debug(f"牌桌【{self.table_code}】比较可知没有应处理的请求，已返回 None.")
         return index
 
     async def handle_player_request(self, player_index:int, default_type:str="cancel"):
