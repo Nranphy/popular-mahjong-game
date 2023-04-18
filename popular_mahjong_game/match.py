@@ -518,8 +518,8 @@ class Match:
             raise WinException("牌型未构成和牌")
         self.result = {
             "end_type": "ron" if target_player_index!=None else "zimo",
-            "winner": player_index,
-            "loser": target_player_index,
+            "winner": self.player[player_index].to_dict().get("name", ""),
+            "loser": [self.player[target_player_index].to_dict().get("name", "")] if target_player_index!=None else [self.player[i].to_dict().get("name", "") for i in range(MATCH_PLAYER_COUNT) if i!=player_index],
             "attribute": win_result[0][1],
             "score": win_result[0][0]
         }
