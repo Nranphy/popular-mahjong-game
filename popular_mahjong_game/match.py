@@ -833,6 +833,9 @@ class Table:
         else:
             logger.error(f"未找到指定的type方法，所指定method_name为【{method_name}】，已忽略操作。")
         self.player_request[player_index] = {}
+
+    async def _cancel_handler(self, player_index:int):
+        self.player_request[player_index] = {}
     
     async def _discard_handler(self, player_index:int):
         request = self.player_request[player_index]
