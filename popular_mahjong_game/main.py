@@ -137,7 +137,7 @@ async def player_connect(ws:WebSocket, user_id:str, token:str):
         await login_auth(user_id, token)
     except HTTPException as e:
         await ws.close(1008, reason=e.detail)
-        logger.debug(f"玩家【{user_id}】的ws连接因【{e.detail}】断开")
+        logger.debug(f"玩家【{user_id}】的WebSocket连接因【{e.detail}】断开")
         return
     player = player_manager.get_online_player(user_id)
     if not player.if_in_table():

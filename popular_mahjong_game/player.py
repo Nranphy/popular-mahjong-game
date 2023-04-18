@@ -23,7 +23,7 @@ class Player:
     in_table:str=''
     '''玩家桌号'''
     ws:WebSocket=None
-    '''玩家ws连接'''
+    '''玩家WebSocket连接'''
 
     def to_dict(self):
         return {
@@ -73,7 +73,7 @@ class Player:
                     "type":"heartbeat"
                 })
         except:
-            logger.error(f"检测到用户【{self.user_id}】ws连接断开。")
+            logger.error(f"检测到用户【{self.user_id}】WebSocket连接断开。")
             self.ws = None
     
     async def update_score(self, new_score:int):

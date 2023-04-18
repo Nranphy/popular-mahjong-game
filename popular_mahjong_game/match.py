@@ -46,23 +46,19 @@ class PlayerInMatch:
     
     def action_check(self, new:str=None, target_player_index:int=None, need_discard:bool=False, only_discard:bool=False) -> list[dict]:
         actions = []
-        if only_discard:
+        if only_discard or need_discard:
             actions.append({
                 "action": "discard",
                 "player_index": self.player_index,
             })
-            return actions
+            if only_discard:
+                return actions
         if new:
             if target_player_index==None:
-                actions:list[dict] = self._kan_check(new, target_player_index)+self._win_check(new, target_player_index)
+                actions:list[dict] = actions+self._kan_check(new, target_player_index)+self._win_check(new, target_player_index)
             else:
-                actions:list[dict] = self._kan_check(new, target_player_index)+self._win_check(new, target_player_index)\
+                actions:list[dict] = actions+self._kan_check(new, target_player_index)+self._win_check(new, target_player_index)\
                     +self._chi_check(new, target_player_index)+self._pon_check(new, target_player_index)
-        if need_discard:
-            actions.append({
-                "action": "discard",
-                "player_index": self.player_index,
-            })
         return actions
         
 
@@ -108,6 +104,8 @@ class PlayerInMatch:
                 "player_index": self.player_index,
                 "target_player_index": target_player_index
             }]
+        else:
+            return []
 
     def _kan_check(self, new:str, target_player_index:int=None) -> list[dict]:
         res = []
@@ -322,24 +320,28 @@ class Match:
         player = self.player[player_index]
         if not tile_type and not discard_draw:
             raise DiscardException(f"切牌信息不足，切牌失败。")
-        elif (discard_draw and player.draw==tile_type) or (discard_draw and not tile_type):
+        elif (discard_draw and player.draw==tile_type) or (discard_draw and not tile_type and player.draw):
             player.discard.append((player.draw, False))
             tile_type = player.draw
+        elif discard_draw and not tile_type and player.draw:
+            tile_type = player.close.pop()
+            player.discard.append((tile_type, True))
+            logger.debug("玩家默认切牌且draw区为空，已自动切手牌。")
         else:
             flag = False
             for i, tile in enumerate(player.close):
                 if tile==tile_type:
                     flag = True
                     player.discard.append((tile_type, True))
-                    player.close[i] = player.draw
+                    if player.draw: # 摸了牌的情况
+                        player.close[i] = player.draw
+                    else: # 没摸牌的情况
+                        player.close.pop(i)
                     break
             if not flag:
-                if discard_draw:
-                    player.discard.append((tile, True))
-                    player.close.pop()
-                    logger.error("玩家指定摸切但不存在摸切牌，已自动切手牌。")
-                else:
-                    raise DiscardException(f"所指定切牌不存在，失败切牌为{tile_type}，手牌为{player.close}。")
+                tile_type = player.close.pop()
+                player.discard.append((tile_type, True))
+                logger.error("玩家选择切牌错误，已自动切手牌。")
         player.draw = None
         return tile_type
 
@@ -545,6 +547,7 @@ class Match:
         random.seed(rand_seed)
         temp_deck = [f"{num}{color}" for _ in range(4) for num in range(1,10) for color in "msp"]
         random.shuffle(temp_deck)
+        temp_deck = ["1m", "1m", "2m", "2m", "3m", "4m", "5s", "5s", "3m", "3p", "3p", "4p", "5m", "3p", "7s", "8s", "4p", "5s", "5s", "6s", "9s", "6s", "5s", "4s", "6s", "3s", "5m", "9s", "3m", "4s", "9s", "9s"]
         self.hash = md5(''.join(temp_deck).encode()).hexdigest()
         self.initial_deck = temp_deck
         self.deck = deque(temp_deck)
@@ -678,7 +681,7 @@ class Table:
             logger.debug(f"玩家【{user_id}】重连房间【{self.table_code}】。")
     
     async def ready(self):
-        await asyncio.sleep(3) # 等待最后一名玩家的ws连接
+        await asyncio.sleep(3) # 等待最后一名玩家的WebSocket连接
         await self.send_public_message({
             "type":"can_ready"
         })
@@ -748,7 +751,7 @@ class Table:
                 "data":{"player_index":draw_player_index}
             }, draw_player_index)
             # 摸牌玩家检测，进行操作。操作所引发的其他操作均在对应函数中进行
-            await self.check_player_action_option(draw_player_index, draw_tile, True)
+            await self.check_player_action_option(draw_player_index, new=draw_tile, need_discard=True)
             try:
                 await self.handle_player_request(draw_player_index, "discard")
             except MatchEndedException:
@@ -759,8 +762,10 @@ class Table:
                 continue
         return self.match.result
 
-    async def check_player_action_option(self, player_index:int, new:str=None, need_discard=False, only_discard=False):
-        option = self.match.player[player_index].action_check(new=new, need_discard=need_discard, only_discard=only_discard)
+    async def check_player_action_option(self, player_index:int, target_player_index:int=None, new:str=None, need_discard=False, only_discard=False):
+        logger.debug(f"牌桌【{self.table_code}】开始检查玩家序号【{player_index}】可选操作，参数为player_index={player_index}, target_player_index={target_player_index}, new={new}, need_discard={need_discard}, only_discard={only_discard}...")
+        option = self.match.player[player_index].action_check(new=new, target_player_index=target_player_index, need_discard=need_discard, only_discard=only_discard)
+        logger.debug(f"牌桌【{self.table_code}】检查到玩家序号【{player_index}】可选操作如下：{option}")
         if option:
             await self.send_private_message({
                 "type":"action_choose",
@@ -795,7 +800,9 @@ class Table:
 
     def compare_player_requests(self) -> Optional[int]:
         '''比较不同玩家请求优先级，返回应处理玩家下标，None则为无操作'''
-        if not all(self.player_request):
+        logger.debug(f"牌桌【{self.table_code}】开始比较不同玩家的请求优先级...")
+        if not any(self.player_request):
+            logger.debug(f"牌桌【{self.table_code}】玩家请求均为空，已取消比较。")
             return
         por = {"win":10, "discard":9, "kan":8, "pon":7, "chi":6, "cancel":0}
         index, max_por = None, 0
@@ -808,6 +815,7 @@ class Table:
             if i==index:
                 continue
             self.player_request[i] = {}
+        logger.debug(f"牌桌【{self.table_code}】比较得最高优先级的请求为序号【{index}】请求：{self.player_request[index]}")
         return index
 
     async def handle_player_request(self, player_index:int, default_type:str="cancel"):
@@ -823,7 +831,6 @@ class Table:
                 logger.error(f"用户调用【{method_name}】操作时出错，错误类型为{e}。")
         else:
             logger.error(f"未找到指定的type方法，所指定method_name为【{method_name}】，已忽略操作。")
-            raise
         self.player_request[player_index] = {}
     
     async def _discard_handler(self, player_index:int):
@@ -836,13 +843,14 @@ class Table:
                 "discard_draw": True
             }
         tile = self.match.discard(player_index, request.get("tile_type", ""), request.get("discard_draw", True))
+        self.player_request[player_index] = {}
         await self.send_public_message({
             "type": "discard",
             "tile_type": tile,
             "player_index": player_index,
         })
         logger.debug(f"牌桌【{self.table_code}】中玩家序号【{player_index}】的【切牌】操作完成，进行后续操作。")
-        tasks = [asyncio.create_task(self.check_player_action_option(index, tile, False)) for index in range(MATCH_PLAYER_COUNT) if index!=player_index]
+        tasks = [asyncio.create_task(self.check_player_action_option(index, player_index, tile, False)) for index in range(MATCH_PLAYER_COUNT) if index!=player_index]
         await asyncio.gather(*tasks)
         action_index = self.compare_player_requests()
         if action_index!=None:
@@ -856,10 +864,12 @@ class Table:
         if not request:
             return
         self.match.chi(player_index, request.get("target_player_index"), request.get("tile_type"), request.get("tiles"))
+        self.player_request[player_index] = {}
         await self.send_public_message({
             "type": "chi",
             "tiles": sorted([request.get("tile_type")]+request.get("tiles")),
             "player_index": player_index,
+            "target_player_index": request.get("target_player_index")
         })
         logger.debug(f"牌桌【{self.table_code}】中玩家序号【{player_index}】的【吃】操作完成，进行后续操作。")
         await self.check_player_action_option(player_index, only_discard=True)
@@ -874,10 +884,12 @@ class Table:
         if not request:
             return
         self.match.pon(player_index, request.get("target_player_index"), request.get("tile_type"))
+        self.player_request[player_index] = {}
         await self.send_public_message({
             "type": "pon",
             "tiles": [request.get("tile_type")]*3,
             "player_index": player_index,
+            "target_player_index": request.get("target_player_index")
         })
         logger.debug(f"牌桌【{self.table_code}】中玩家序号【{player_index}】的【碰】操作完成，进行后续操作。")
         await self.check_player_action_option(player_index, only_discard=True)
@@ -891,11 +903,13 @@ class Table:
         if not request:
             return
         self.match.kan(player_index, request.get("tile_type"), request.get("kan_type"), request.get("target_player_index"))
+        self.player_request[player_index] = {}
         await self.send_public_message({
             "type": "kan",
             "kan_type": request.get("kan_type"),
             "tiles": [request.get("tile_type")]*4,
             "player_index": player_index,
+            "target_player_index": request.get("target_player_index")
         })
         logger.debug(f"牌桌【{self.table_code}】中玩家序号【{player_index}】的【杠】操作完成，进行后续操作。")
 
@@ -904,6 +918,7 @@ class Table:
         if not request:
             return
         self.match.win(player_index, request.get("tile_type"), request.get("target_player_index"))
+        self.player_request[player_index] = {}
         logger.debug(f"牌桌【{self.table_code}】中玩家序号【{player_index}】的【和牌】操作完成，进行后续操作。")
 
     async def send_public_message(self, msg:dict, ignore_player_index:int=None):
