@@ -630,16 +630,17 @@ class Table:
             await self.player[i].update_score(self.player_in_match[i].score)
         logger.info(f"牌桌【{self.table_code}】牌局结束，桌内玩家分数已更新。")
         # 牌桌解散
-        await self.dismiss("牌局结束，牌桌解散。")
+        await self.dismiss("牌局结束，牌桌解散。", False)
         return
 
 
-    async def dismiss(self, reason:str=""):
-        await self.send_public_message(
-            {
-            "type": "dismiss",
-            "data": reason
-            })
+    async def dismiss(self, reason:str="", send_msg:bool=True):
+        if send_msg:
+            await self.send_public_message(
+                {
+                "type": "dismiss",
+                "data": reason
+                })
         tasks = [asyncio.create_task(table_manager.exit_table(self.table_code, player.user_id, True)) for player in self.player]
         await asyncio.gather(*tasks)
         logger.debug(f"牌桌【{self.table_code}】被解散，原因是【{reason}】。")
