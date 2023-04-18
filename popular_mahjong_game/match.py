@@ -521,7 +521,9 @@ class Match:
             "winner": self.player[player_index].to_dict().get("name", ""),
             "loser": [self.player[target_player_index].to_dict().get("name", "")] if target_player_index!=None else [self.player[i].to_dict().get("name", "") for i in range(MATCH_PLAYER_COUNT) if i!=player_index],
             "attribute": win_result[0][1],
-            "score": win_result[0][0]
+            "score": win_result[0][0],
+            "winner_index": player_index,
+            "loser_index": target_player_index
         }
         raise MatchEndedException("玩家和牌，牌局结束")
 
@@ -617,8 +619,8 @@ class Table:
             logger.debug(f"牌局结束，序号【{winner_index}】的玩家【{self.player_in_match[i].user_id}】{'自摸' if res.get('end_type') == 'zimo' else '荣和'}获胜【{score}*3】点数。")
         elif res.get("end_type") == "ron":
             score:int = res.get("score", 0)
-            winner_index:int = res.get("winner")
-            loser_index:int = res.get("loser")
+            winner_index:int = res.get("winner_index")
+            loser_index:int = res.get("loser_index")
             self.player_in_match[winner_index].score += score
             logger.debug(f"序号【{winner_index}】的玩家【{self.player_in_match[winner_index].user_id}】分数 +{score}.")
             self.player_in_match[loser_index].score -= score
