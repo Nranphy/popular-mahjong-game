@@ -142,7 +142,7 @@ def _save_player_data(player:Player):
         cursor.execute(f"""
         UPDATE {ACCOUNT_TABLES_NAME} 
         SET total_score = {player.total_score} 
-        WHERE user_id = {player.user_id};""")
+        WHERE user_id = '{player.user_id}';""")
         connection.commit()
     logger.debug(f"玩家 {player.user_id} 分数数据成功保存。")
 

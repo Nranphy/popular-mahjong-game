@@ -555,7 +555,8 @@ class Match:
         random.seed(rand_seed)
         temp_deck = [f"{num}{color}" for _ in range(4) for num in range(1,10) for color in "msp"]
         random.shuffle(temp_deck)
-        temp_deck = ["1m", "1m", "2m", "2m", "3m", "4m", "5s", "5s", "3m", "3p", "3p", "4p", "5m", "3p", "7s", "8s", "4p", "5s", "5s", "6s", "9s", "6s", "5s", "4s", "6s", "3s", "5m", "9s", "3m", "4s", "9s", "9s"]
+        # 双人测试牌堆
+        # temp_deck = ["1m", "1m", "2m", "2m", "3m", "4m", "5s", "5s", "3m", "3p", "3p", "4p", "5m", "3p", "7s", "8s", "4p", "5s", "5s", "6s", "9s", "6s", "5s", "4s", "6s", "3s", "5m", "9s", "3m", "4s", "9s", "9s"]
         self.hash = md5(''.join(temp_deck).encode()).hexdigest()
         self.initial_deck = temp_deck
         self.deck = deque(temp_deck)

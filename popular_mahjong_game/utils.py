@@ -7,7 +7,7 @@ import pymysql
 READY_TIMEOUT = 10
 '''准备限制时间'''
 
-MATCH_PLAYER_COUNT = 2
+MATCH_PLAYER_COUNT = 4
 '''对局玩家人数'''
 
 THINKING_TIME_LIMIT = 60
